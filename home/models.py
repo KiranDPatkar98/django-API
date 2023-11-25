@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.db import models
 
 # Create your models here.
@@ -13,6 +14,11 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def save(self, *args, **kwargs):
+        if not self.uid:
+            self.uid = str(uuid4())
+        super().save(*args, **kwargs)
 
 
 class Todo(BaseModel):
