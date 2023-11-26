@@ -1,9 +1,14 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializer import TodoSerializer
-from .models import Todo
+from .serializer import TodoSerializer, TimingTodoSerializer
+from .models import Todo, TimingTodo
 from rest_framework.views import APIView
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+
 # Create your views here.
 
 
@@ -83,8 +88,13 @@ def patch_todo(request):
 # using class based
 
 class Todo_view(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        todo_objs = Todo.objects.all()
+        # to get the data based on data
+        todo_objs = Todo.objects.filter(user=request.user)
+        # todo_objs = Todo.objects.all()
         serializer = TodoSerializer(todo_objs, many=True)
 
         return Response({
@@ -94,8 +104,10 @@ class Todo_view(APIView):
         })
 
     def post(self, request):
+
         try:
             data = request.data
+            data['user'] = request.user.id
             serializer = TodoSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -129,3 +141,47 @@ class Todo_view(APIView):
             )
         except Todo.DoesNotExist:
             return Response({'status': 404, 'message': 'Todo not found'})
+
+
+# API's using view set
+
+
+class TodoViewSet(viewsets.ModelViewSet):
+    queryset = Todo.objects.all()
+    serializer_class = TodoSerializer
+
+    @action(detail=False, methods=['post'])
+    def add_date_to_todo(self, request):
+        try:
+            data = request.data
+            serializer = TimingTodoSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {
+                        'status': 200,
+                        'message': 'Success',
+                        'data': serializer.data
+                    }
+                )
+            else:
+                return Response(
+                    {
+                        "status": 404,
+                        'message': 'Invalid data',
+                        "data": serializer.errors
+                    }
+                )
+        except Exception as e:
+            print(e)
+
+    @action(detail=False, methods=['GET'])
+    def get_timing_todo(self, request):
+        todo_objs = TimingTodo.objects.all()
+        serializer = TimingTodoSerializer(todo_objs, many=True)
+
+        return Response({
+            'status': 200,
+            'message': 'fetched successfuly',
+            'data': serializer.data
+        })

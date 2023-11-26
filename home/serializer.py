@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Todo
+from .models import Todo, TimingTodo
 import re
 from django.utils.text import slugify
 
@@ -10,7 +10,8 @@ class TodoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Todo
         # fields = '__all__'
-        fields = ['todo_title', 'slug', 'todo_description', 'is_done', 'uid']
+        fields = ['user', 'todo_title', 'slug',
+                  'todo_description', 'is_done', 'uid']
         # exclude = ['created_at']
 
     def get_slug(self, obj):
@@ -33,3 +34,13 @@ class TodoSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'todod_title cannot contain special characters ')
         return validated_data
+
+
+class TimingTodoSerializer(serializers.ModelSerializer):
+    todo = TodoSerializer()
+
+    class Meta:
+        model = TimingTodo
+        exclude = ['created_at', 'updated_at']
+        # fields = '__all__'
+        # depth = 1
